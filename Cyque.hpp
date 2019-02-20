@@ -1,49 +1,41 @@
+// implementation of a FIFO queue using  a cyclic doubly linked list, allowing
+// for a rotate function to easily move first to last.
+
 #ifndef CYQUE_HPP
 #define CYQUE_HPP
 
-#include <iostream>
-#include <vector>
-
-#include "DenseBits.hpp"
-
-using std::cout;
-using std::endl;
-
-static const unsigned BUFFER_SIZE = 10;
+#include <utility>
 
 namespace cj {
 
+// Cyque class methods: push(), pop(), pop_push(), first(), last(), size()
 template <typename T> class Cyque {
-public:
-  struct item {
+private:
+  // struct to act as lists nodes
+  struct node {
     T data;
-    item *next = nullptr;
-    item *prev = nullptr;
+    node *next = nullptr;
+    node *prev = nullptr;
 
-    item(T &&in) : T{std::move(in)} {}
-
-    ~item() {
-      data.~T();
-      next = nullptr;
-      prev = nullptr;
-    }
+    node(T &&in) : data{std::move(in)} {}
   };
 
-  item *m_first = nullptr;
-  item *m_last = nullptr;
-  unsigned long size = 0;
+  node *m_first = nullptr;
+  node *m_last = nullptr;
+  unsigned long m_size = 0;
 
-  inline void push(T in) { emplace(std::move(in)); }
+public:
+  // copy construct members into Cyque at back of queue
+  inline void push(T in) {
+    emplace(std::move(in));
+    return;
+  }
 
+  // emplace member into Cyque at back of queue
   void emplace(T &&in) {
-    cout << "em-placing" << endl;
+    node *place = new node{std::move(in)};
 
-    item *place = static_cast<item *>(::operator new(sizeof(item)));
-
-    place->data = std::move(in);
-
-    if (size == 0) {
-
+    if (m_size == 0) {
       place->next = place;
       place->prev = place;
 
@@ -60,61 +52,49 @@ public:
       m_last = place;
     }
 
-    ++size;
-
-    place = nullptr;
+    ++m_size;
+    return;
   }
 
+  // delete the first (next accessible) element
   void pop(void) {
-    --size;
+    --m_size;
 
     m_last->next = m_first->next;
     (m_first->next)->prev = m_last;
-    item *tmp = m_first;
+
+    node *tmp = m_first;
     m_first = m_first->next;
 
-    tmp->~item();
-    ::operator delete(tmp);
+    delete tmp;
+    return;
   }
 
+  // move the first element to the back of the queue, very efficient
+  void pop_push() {
+    m_last = m_last->next;
+    m_first = m_first->next;
+
+    return;
+  }
+
+  // return ref to data in first node
   inline T &first(void) { return m_first->data; }
 
-  Cyque() = default;
+  // return ref to data in last node
+  inline T &last(void) { return m_last->data; }
 
+  // return number of elements in queue
+  inline unsigned long size(void) { return m_size; }
+
+  // delete all data in queue
   ~Cyque() {
-    cout << "C destruct" << endl;
-
-    while (size > 0) {
+    while (m_size > 0) {
       pop();
     }
-
-    /*
-
-    item *current = m_first;
-    item *next = nullptr;
-
-    for (unsigned i = 0; i < size; ++i) {
-      next = current->next;
-      current->~item();
-      ::operator delete(current);
-      current = next;
-    }
-    */
   }
 };
 
 } // namespace cj
 
 #endif // CYQUE_HPP
-
-/*
-
-char *place = static_cast<char *>(::operator new(sizeof(Foo)));
-
-Foo *f1 = new (place) Foo;
-
-f1->~Foo();
-
-::operator delete(place);
-
-*/

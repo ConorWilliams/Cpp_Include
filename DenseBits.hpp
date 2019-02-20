@@ -230,7 +230,7 @@ public:
       cout << "For Sets this small use ByteOfBits" << endl;
     }
     set = new ByteOfBits[length];
-    cout << "construct" << endl;
+    // cout << "construct" << endl;
     return;
   }
 
@@ -244,19 +244,20 @@ public:
 
   // copy constructor for functions
   DenseBitsH<size>(DenseBitsH const &other) {
+    // cout << "copy" << endl;
     if (this != &other) {
       delete[] set;
       set = nullptr;
       set = new ByteOfBits[length];
       *this = other;
     }
-    cout << "copy" << endl;
+
     return;
   }
 
   // assignment operator
   DenseBitsH<size> &operator=(const DenseBitsH &other) {
-    cout << "assignment" << endl;
+    // cout << "assignment" << endl;
     if (this != &other) {
       std::copy(other.set, other.set + length, set);
     }
@@ -265,14 +266,14 @@ public:
 
   // move operator
   DenseBitsH<size> &operator=(DenseBitsH &&other) noexcept {
-    cout << "move operator" << endl;
+    // cout << "move operator" << endl;
     if (this != &other) {
       delete[] set;
       set = nullptr;
       set = other.set;
       other.set = nullptr;
     }
-    cout << "Move ends" << endl;
+    // cout << "Move ends" << endl;
     return *this;
   }
 };
