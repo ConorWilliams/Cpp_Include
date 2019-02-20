@@ -4,7 +4,7 @@
 #define ZMAP_HPP
 
 #include <algorithm>
-#include <cstdint>
+//#include <cstdint>
 #include <iostream>
 #include <stdexcept>
 #include <utility>
@@ -18,9 +18,6 @@ using std::endl;
 using std::invalid_argument;
 using std::move;
 using std::swap;
-using std::uint32_t;
-using std::uint64_t;
-using std::uint8_t;
 
 namespace cj {
 
@@ -28,7 +25,7 @@ static const int OVERSIZE = 1;  // how much bigger table is
 static const uint32_t INITIAL_TABLE_SIZE = 7;
 
 template <class value_t = uint32_t>
-class HashTable {
+class RobinHash {
  private:
   struct item {
     cj::ByteOfBits flag;
@@ -274,16 +271,16 @@ class HashTable {
     cout << "#=======Report, End=======#" << endl;
   }
 
-  ~HashTable() {  // destructor
+  ~RobinHash() {  // destructor
     clean();
   }
 
-  HashTable() {  // constructor
+  RobinHash() {  // constructor
     update();
     alloc();
   }
 
-  void _copy(HashTable &to, const HashTable &from) {
+  void _copy(RobinHash &to, const RobinHash &from) {
     if (&to != &from) {
       to.size = from.size;
       to.size_reserve = from.size_reserve;
@@ -297,7 +294,7 @@ class HashTable {
     return;
   }
 
-  HashTable(HashTable const &other) {  // copy constructor for functions
+  RobinHash(RobinHash const &other) {  // copy constructor for functions
     if (this != &other) {
       clean();
       _copy(*this, other);
@@ -309,7 +306,7 @@ class HashTable {
     //*this = other; //untested remove needs testing
   }
 
-  HashTable &operator=(const HashTable &other) {  // assignment operator
+  RobinHash &operator=(const RobinHash &other) {  // assignment operator
     if (this != &other) {
       if (size != other.size) {
         clean();
@@ -323,7 +320,7 @@ class HashTable {
     return *this;
   }
 
-  HashTable &operator=(HashTable &&other) noexcept {  // move operator
+  RobinHash &operator=(RobinHash &&other) noexcept {  // move operator
     if (this != &other) {
       clean();
 
