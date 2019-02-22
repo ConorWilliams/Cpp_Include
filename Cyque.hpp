@@ -8,6 +8,8 @@
 
 namespace cj {
 
+static const unsigned CYQUE_BUFFER_SIZE = 16;
+
 // Cyque class methods: push(), pop(), pop_push(), first(), last(), size()
 template <typename T> class Cyque {
 private:
@@ -18,11 +20,35 @@ private:
     node *prev = nullptr;
 
     node(T &&in) : data{std::move(in)} {}
+    // node() = default;
   };
 
   node *m_first = nullptr;
   node *m_last = nullptr;
   unsigned long m_size = 0;
+
+  node *m_buffer[CYQUE_BUFFER_SIZE] = {nullptr};
+  unsigned m_buffer_size = 0;
+
+  inline node *get_cache() {
+    --m_buffer_size;
+    node *tmp = m_buffer[m_buffer_size];
+    m_buffer[m_buffer_size] = nullptr;
+    return tmp;
+  }
+
+  // returns true if cache empty
+  inline bool cache_empty() { return (m_buffer_size ^ 1U); }
+
+  inline void cache(node *to_cache) {
+    if (m_buffer_size != CYQUE_BUFFER_SIZE) {
+      m_buffer[m_buffer_size] = to_cache;
+      ++m_buffer_size;
+    } else {
+      delete to_cache;
+    }
+    return;
+  }
 
 public:
   // copy construct members into Cyque at back of queue
@@ -74,7 +100,12 @@ public:
   void pop_push() {
     m_last = m_last->next;
     m_first = m_first->next;
-
+    return;
+  }
+  // move the last element to the front of the queue, very efficient
+  void rotate() {
+    m_last = m_last->prev;
+    m_first = m_first->prev;
     return;
   }
 
