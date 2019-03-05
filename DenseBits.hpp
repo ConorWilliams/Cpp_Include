@@ -20,7 +20,7 @@ namespace cj {
 
 static const unsigned char ONE = 1;
 static const unsigned char MAX = 255;
-static const uint_fast32_t MASK = 7;
+static const unsigned MASK = 7;
 
 // Class to access each bit stored in a byte separately, methods:
 // test(), flip(), high(), low(), print(), count()
@@ -109,7 +109,7 @@ public:
       byte &= (MAX ^ (ONE << 6));
       return;
     case 7:
-      byte &= (MAX ^ (ONE << 0));
+      byte &= (MAX ^ (ONE << 7));
       return;
     default:
       throw invalid_argument("Fallen through switch in low()");

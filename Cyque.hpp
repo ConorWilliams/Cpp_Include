@@ -30,6 +30,7 @@ private:
   node *m_buffer[CYQUE_BUFFER_SIZE] = {nullptr};
   unsigned m_buffer_size = 0;
 
+  // gets the previously cached element
   inline node *get_cache() {
     --m_buffer_size;
     node *tmp = m_buffer[m_buffer_size];
@@ -37,9 +38,7 @@ private:
     return tmp;
   }
 
-  // returns true if cache empty
-  inline bool cache_empty() { return (m_buffer_size ^ 1U); }
-
+  // if space caches element else deletes it
   inline void cache(node *to_cache) {
     if (m_buffer_size != CYQUE_BUFFER_SIZE) {
       m_buffer[m_buffer_size] = to_cache;
@@ -59,7 +58,14 @@ public:
 
   // emplace member into Cyque at back of queue
   void emplace(T &&in) {
-    node *place = new node{std::move(in)};
+    node *place = nullptr;
+
+    if (m_buffer_size == 0) {
+      place = new node{std::move(in)};
+    } else {
+      place = get_cache();
+      place->data = std::move(in);
+    }
 
     if (m_size == 0) {
       place->next = place;
@@ -92,7 +98,7 @@ public:
     node *tmp = m_first;
     m_first = m_first->next;
 
-    delete tmp;
+    cache(tmp);
     return;
   }
 
@@ -118,12 +124,22 @@ public:
   // return number of elements in queue
   inline unsigned long size(void) { return m_size; }
 
-  // delete all data in queue
+  // delete all data in queue and buffer
   ~Cyque() {
     while (m_size > 0) {
       pop();
     }
+    for (unsigned i = 0; i < m_buffer_size; ++i) {
+      delete m_buffer[i];
+    }
   }
+};
+
+template <typename T> class Dcyque : public Cyque<T> {
+private:
+  /* data */
+public:
+  Dcyque(/* args */) = default;
 };
 
 } // namespace cj
