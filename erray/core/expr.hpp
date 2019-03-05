@@ -1,10 +1,17 @@
 /**
  * erray_expr.hpp
  *
+ * The following code (part of the erray module) is © 2019 C. J. Williams.
+ *
  * Part of the erray module implementing 1, 2 and 3 dimensional arrays using
  * expression templates.
  *
- * Part of the core bundle, see errey_core.hpp for full detail.
+ * Part of the core bundle, see errey_core.hpp for full details.
+ *
+ * This file contains the implementation for operators and functions that act on
+ * erray expressions and return an erray expression that can be further
+ * compounded.
+ *
  */
 
 #ifndef ERRAY_EXPR_HPP

@@ -1,10 +1,18 @@
 /**
  * erray_main.hpp
  *
+ * The following code (part of the erray module) is © 2019 C. J. Williams.
+ *
  * Part of the erray module implementing 1, 2 and 3 dimensional arrays using
  * expression templates
  *
- * Part of the core bundle, see errey_core.hpp for full detail.
+ * Part of the core bundle, see errey_core.hpp for full details.
+ *
+ * This file implements the base class ErrExpr used for all expressions classes
+ * to enable expression templates using the curiously recurring template
+ * pattern. It also includes the main Erray class and the similar Window
+ * class for slicing lvalue Errays.
+ *
  */
 
 #ifndef ERRAY_MAIN_HPP

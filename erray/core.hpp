@@ -1,16 +1,21 @@
 /**
  * erray_core.hpp
  *
- * Core header file for the errey module implementing 1 , 2 and 3 dimensional
- * arrays using expression templates.
+ * The following code (part of the erray module) is © 2019 C. J. Williams.
+ *
+ * This is the outer header file for the core headers bundle from the errey
+ * module, implementing 1 , 2 and 3 dimensional arrays using expression
+ * templates.
  *
  * Within this header bundle the main classes for Errays are defined as well as
- * all the class, overloads and functions for Erray expressions.
+ * all the class, overloads and functions for erray expressions.
  *
  * Erray is a contraction of expression-array.
  *
- * Errays support slicing through .slice() for rvalues and through .window() for
- * lvalues.
+ * An Erray is considered an erray expression.
+ *
+ * Erray expressions support slicing through .slice() for rvalues and through
+ * .window() for lvalues.
  *
  * Errays can be printed through an overload of std::cout.
  *
@@ -18,12 +23,14 @@
  * functions: sum(), min(), max(), avg()
  * initialise: empty(), zeros(), ones(), linspace(), enumerate()
  *
- * Erray operations/assignments are, were appropriate, compatible with "scalars"
- * i.e entities of the Errays base type, T.
+ * Erray operations/assignments are - were appropriate - compatible with
+ * "scalars" i.e entities of the erray expression base type, T.
  *
  * Errays expressions are optimised to work with trivial/base types however the
  * module handles arbitrary base types and can be used as an effective container
  * for any type.
+ *
+ * All shape checking can be disabled through the "#define NDEBUG" macro.
  *
  * TODO CONVERT ALL T PASSES TO PASS BY VALUE
  *
@@ -177,7 +184,7 @@ std::ostream &operator<<(std::ostream &stream,
                          const cj::erray::ErrExpr<E, T> &err);
 
 // ****************************************************************************
-// *                           Including Sub-Headers                          *
+// *                   Including Sub-Headers for core bundle                  *
 // ****************************************************************************
 
 #include <erray/core/base.hpp>

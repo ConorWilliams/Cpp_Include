@@ -1,18 +1,24 @@
 /**
  * erray_funct.hpp
  *
+ * The following code (part of the erray module) is © 2019 C. J. Williams.
+ *
  * Part of the erray module implementing 1, 2 and 3 dimensional arrays using
  * expression templates.
  *
- * Part of the core bundle, see errey_core.hpp for full detail.
+ * Part of the core bundle, see errey_core.hpp for full details.
+ *
+ * This file contains functions that take erray expressions as their input and
+ * return non erray expressions or functions that take non erray expressions as
+ * there input and return erray expressions.
+ *
  */
 
 #ifndef ERRAY_FUNCT_HPP
 #define ERRAY_FUNCT_HPP
 
 // ****************************************************************************
-// *          Functions acting on Errays and Erray expressions that           *
-// *                         do not return expressions                        *
+// *                            erray expression in                           *
 // ****************************************************************************
 
 #include <erray/core.hpp>
@@ -97,6 +103,73 @@ T min(ErrExpr<E, T> const &expr) {
 
     return min;
 }
+
+/*----------------------------------------------------------------------------*/
+
+/**
+ * @brief      print any Erray expression
+ *
+ * @param[in]  err   input expression
+ *
+ * @tparam     E     curiously  recursive type
+ * @tparam     T     underlying Erray type
+ */
+template <typename T, typename E>
+void print(const ErrExpr<E, T> &err) {
+    cout << "[";
+    for (ull k = 0; k < err.shape().k; ++k) {
+        if (k == 0) {
+            cout << "(";
+        } else {
+            cout << " (";
+        }
+        for (ull i = 0; i < err.shape().i; ++i) {
+            if (i == 0) {
+                cout << "{ ";
+            } else {
+                cout << "  { ";
+            }
+            for (ull j = 0; j < err.shape().j; ++j) {
+                cout << err(i, j, k) << " ";
+            }
+            if (i == err.shape().i - 1) {
+                cout << "}";
+            } else {
+                cout << "}" << endl;
+            }
+        }
+        if (k == err.shape().k - 1) {
+            cout << ")";
+
+        } else {
+            cout << ")" << endl;
+            cout << endl;
+        }
+    }
+    cout << "]";
+}
+
+/**
+ * @brief      Overloading std::cout to print Erray expressions
+ *
+ * @param      stream  the stream
+ * @param[in]  err     the input expression
+ *
+ * @tparam     E     curiously  recursive type
+ * @tparam     T     underlying Erray type
+ *
+ * @return     the stream
+ */
+template <typename E, typename T>
+std::ostream &operator<<(std::ostream &stream,
+                         const cj::erray::ErrExpr<E, T> &err) {
+    cj::erray::print(err);
+    return stream;
+}
+
+// ****************************************************************************
+// *                           erray expression out                           *
+// ****************************************************************************
 
 /**
  * @brief      returns an empty Erray
@@ -250,67 +323,6 @@ Erray<T> enumerate(const ull i, const ull j, const ull k) {
         }
     }
     return out;
-}
-
-/**
- * @brief      print any Erray expression
- *
- * @param[in]  err   input expression
- *
- * @tparam     E     curiously  recursive type
- * @tparam     T     underlying Erray type
- */
-template <typename T, typename E>
-void print(const ErrExpr<E, T> &err) {
-    cout << "[";
-    for (ull k = 0; k < err.shape().k; ++k) {
-        if (k == 0) {
-            cout << "(";
-        } else {
-            cout << " (";
-        }
-        for (ull i = 0; i < err.shape().i; ++i) {
-            if (i == 0) {
-                cout << "{ ";
-            } else {
-                cout << "  { ";
-            }
-            for (ull j = 0; j < err.shape().j; ++j) {
-                cout << err(i, j, k) << " ";
-            }
-            if (i == err.shape().i - 1) {
-                cout << "}";
-            } else {
-                cout << "}" << endl;
-            }
-        }
-        if (k == err.shape().k - 1) {
-            cout << ")";
-
-        } else {
-            cout << ")" << endl;
-            cout << endl;
-        }
-    }
-    cout << "]";
-}
-
-/**
- * @brief      Overloading std::cout to print Erray expressions
- *
- * @param      stream  the stream
- * @param[in]  err     the input expression
- *
- * @tparam     E     curiously  recursive type
- * @tparam     T     underlying Erray type
- *
- * @return     the stream
- */
-template <typename E, typename T>
-std::ostream &operator<<(std::ostream &stream,
-                         const cj::erray::ErrExpr<E, T> &err) {
-    cj::erray::print(err);
-    return stream;
 }
 
 #endif  // ERRAY_FUNCT_HPP
