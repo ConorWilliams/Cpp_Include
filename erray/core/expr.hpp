@@ -1,7 +1,8 @@
 /**
  * erray_expr.hpp
  *
- * The following code (part of the erray module) is © 2019 C. J. Williams.
+ * The following code (part of the erray module) is Copyright © 2019 C. J.
+ * Williams, all rights reserved.
  *
  * Part of the erray module implementing 1, 2 and 3 dimensional arrays using
  * expression templates.
@@ -11,6 +12,10 @@
  * This file contains the implementation for operators and functions that act on
  * erray expressions and return an erray expression that can be further
  * compounded.
+ *
+ * These erray expressions build an "expression tree", that enable lazy
+ * evaluation of expressions upon assignment to an Erray eliminating temporaries
+ * and repeated looping over Errays.
  *
  */
 
@@ -68,6 +73,8 @@ class ErrayScalSum : public ErrExpr<ErrayScalSum<T, Erhs>, T> {
     COMMON_MACRO
 };
 
+/*----------------------------------------------------------------------------*/
+
 template <typename Elhs, typename Erhs, typename T>
 ErraySum<Elhs, Erhs, T> operator+(ErrExpr<Elhs, T> const &u,
                                   ErrExpr<Erhs, T> const &v) {
@@ -75,12 +82,12 @@ ErraySum<Elhs, Erhs, T> operator+(ErrExpr<Elhs, T> const &u,
 }
 
 template <typename T, typename Erhs>
-ErrayScalSum<T, Erhs> operator+(T const &u, ErrExpr<Erhs, T> const &v) {
+ErrayScalSum<T, Erhs> operator+(T const u, ErrExpr<Erhs, T> const &v) {
     return ErrayScalSum<T, Erhs>{u, v};
 }
 
 template <typename T, typename Erhs>
-ErrayScalSum<T, Erhs> operator+(ErrExpr<Erhs, T> const &v, T const &u) {
+ErrayScalSum<T, Erhs> operator+(ErrExpr<Erhs, T> const &v, T const u) {
     return ErrayScalSum<T, Erhs>{u, v};
 }
 
@@ -113,6 +120,7 @@ class ErrayScalMul : public ErrExpr<ErrayScalMul<T, Erhs>, T> {
 
    public:
     T operator()(const ull i = 0, const ull j = 0, const ull k = 0) const {
+        cout << "operator" << endl;
         return _u * _v(i, j, k);
     }
 
@@ -121,6 +129,8 @@ class ErrayScalMul : public ErrExpr<ErrayScalMul<T, Erhs>, T> {
     COMMON_MACRO
 };
 
+/*----------------------------------------------------------------------------*/
+
 template <typename Elhs, typename Erhs, typename T>
 ErrayMul<Elhs, Erhs, T> operator*(ErrExpr<Elhs, T> const &u,
                                   ErrExpr<Erhs, T> const &v) {
@@ -128,12 +138,12 @@ ErrayMul<Elhs, Erhs, T> operator*(ErrExpr<Elhs, T> const &u,
 }
 
 template <typename T, typename Erhs>
-ErrayScalMul<T, Erhs> operator*(T const &u, ErrExpr<Erhs, T> const &v) {
+ErrayScalMul<T, Erhs> operator*(T const u, ErrExpr<Erhs, T> const &v) {
     return ErrayScalMul<T, Erhs>{u, v};
 }
 
 template <typename T, typename Erhs>
-ErrayScalMul<T, Erhs> operator*(ErrExpr<Erhs, T> const &v, T const &u) {
+ErrayScalMul<T, Erhs> operator*(ErrExpr<Erhs, T> const &v, T const u) {
     return ErrayScalMul<T, Erhs>{u, v};
 }
 
@@ -189,6 +199,8 @@ class ErrayPowScal : public ErrExpr<ErrayPowScal<T, Erhs>, T> {
     COMMON_MACRO
 };
 
+/*----------------------------------------------------------------------------*/
+
 template <typename Elhs, typename Erhs, typename T>
 ErrayPow<Elhs, Erhs, T> pow(ErrExpr<Elhs, T> const &u,
                             ErrExpr<Erhs, T> const &v) {
@@ -212,8 +224,8 @@ ErrayPowScal<T, Erhs> pow(ErrExpr<Erhs, T> const &v, T const u) {
 template <typename T, typename E>
 class Slice : public ErrExpr<Slice<T, E>, T> {
     ErrExpr<E, T> const &_v;
-    Tripple const _shape;
-    Tripple const _offset;
+    Tripple const _shape{0, 0, 0};
+    Tripple const _offset{0, 0, 0};
     ull const _size;
 
    public:
@@ -227,9 +239,9 @@ class Slice : public ErrExpr<Slice<T, E>, T> {
     Tripple shape(void) const { return _shape; }
 
     ull size(void) const { return _size; }
-
-    T sum(void) const { return cj::erray::sum(*this); }
 };
+
+/*----------------------------------------------------------------------------*/
 
 template <typename T, typename E>
 Slice<T, E> slice(ErrExpr<E, T> const &expr, const ull i0, const ull i1) {
@@ -253,6 +265,54 @@ Slice<T, E> slice(ErrExpr<E, T> const &expr, const ull i0, const ull i1,
 
     return Slice<T, E>{expr, Tripple{i0, i2, i4},
                        Tripple{i1 - i0, i3 - i2, i5 - i4}};
+}
+
+// ****************************************************************************
+// *                             Auto Element-Wise                            *
+// ****************************************************************************
+
+/**
+ * @brief      Class for converting functions to element wise functions that act
+ *             on erray expressions, requires the function to be wrapped in a
+ *             functor class. There is a macro defined in base that can be used
+ *             in ErrExpr to easily convert any single input function to an
+ *             erray element-wise expression that integrates into expression
+ *             templates using this class.
+ *
+ * @tparam     E      curiously  recursive type
+ * @tparam     T      underlying Erray type
+ * @tparam     Funct  functor class wrapping function.
+ */
+template <typename E, typename T, typename Funct>
+class ErrayElemWise : public ErrExpr<ErrayElemWise<E, T, Funct>, T> {
+    ErrExpr<E, T> const &_v;
+    static const Funct foo;
+
+   public:
+    T operator()(const ull i = 0, const ull j = 0, const ull k = 0) const {
+        return foo(_v(i, j, k));
+    }
+
+    ErrayElemWise(ErrExpr<E, T> const &v) : _v{v} {}
+
+    COMMON_MACRO
+};
+
+/**
+ * @brief      function to produce an ErrayElemWise class for erray expressions
+ *             see class for full detail
+ *
+ * @param      v      the input erray expression
+ *
+ * @tparam     Funct  functor wrapping function
+ * @tparam     E      curiously  recursive type
+ * @tparam     T      underlying Erray type
+ *
+ * @return     an ErrayElemWise class
+ */
+template <typename Funct, typename E, typename T>
+ErrayElemWise<E, T, Funct> elem_wise(ErrExpr<E, T> const &v) {
+    return ErrayElemWise<E, T, Funct>{v};
 }
 
 #endif  // ERRAY_EXPR_HPP

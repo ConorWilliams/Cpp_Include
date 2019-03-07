@@ -1,7 +1,8 @@
 /**
  * erray_main.hpp
  *
- * The following code (part of the erray module) is © 2019 C. J. Williams.
+ * The following code (part of the erray module) is Copyright © 2019 C. J.
+ * Williams, all rights reserved.
  *
  * Part of the erray module implementing 1, 2 and 3 dimensional arrays using
  * expression templates
@@ -23,6 +24,31 @@
 // ****************************************************************************
 
 #include <erray/core.hpp>
+
+/**
+ * @brief      Macro for easily converting arbitrary functions that take a
+ *             scalar as their input to a functions that act on erray
+ *             expressions and are evaluated element-wise. To add your convert
+ *             your own function just add it using this macro into the ErrExpr
+ *             class. The macro automatically makes a wrapper class to wrap the
+ *             input function into a functor object.
+ *
+ * @param      FUNCTION   The function to apply element-wise
+ * @param      METHODNAME  The name of the method for accessing this
+ *             "Function"Functor
+ *
+ * @return     { description_of_the_return_value }
+ */
+#define ELEM_FUNCT_MACRO(FUNCTION, METHODNAME)                         \
+                                                                       \
+    struct METHODNAME##_FunctorWrapper {                               \
+        inline T operator()(T input) const { return FUNCTION(input); } \
+        METHODNAME##_FunctorWrapper() = default;                       \
+    };                                                                 \
+    inline auto METHODNAME(void) const {                               \
+        return cj::erray::elem_wise<METHODNAME##_FunctorWrapper>(      \
+            static_cast<E const &>(*this));                            \
+    }
 
 /**
  * @brief      Base class for all Errays and Erray expressions
@@ -66,6 +92,20 @@ class ErrExpr {
     inline T min(void) const {
         return cj::erray::max(static_cast<E const &>(*this));
     }
+
+    inline auto pow(T const scalar) const {
+        return cj::erray::pow(static_cast<E const &>(*this), scalar);
+    }
+
+    template <typename K>
+    inline auto pow(ErrExpr<K, T> const &err) const {
+        return cj::erray::pow(static_cast<E const &>(*this), err);
+    }
+
+    ELEM_FUNCT_MACRO(std::cos, cos)
+    ELEM_FUNCT_MACRO(std::sin, sin)
+    ELEM_FUNCT_MACRO(std::tan, tan)
+    ELEM_FUNCT_MACRO(std::abs, abs)
 };
 
 // ****************************************************************************
@@ -81,10 +121,12 @@ template <typename T = double>
 class Erray : public ErrExpr<Erray<T>, T> {
    public:
     T *m_elems = nullptr;
-    Tripple m_shape;
+    Tripple m_shape{0, 0, 0};
 
     inline ull to_flat(const ull i = 0, const ull j = 0,
                        const ull k = 0) const {
+        ASSERT(i < shape().i && j < shape().j && k < shape().k,
+               "() indexing out of bounds");
         return i + m_shape.i * j + m_shape.i * m_shape.j * k;
     }
 
@@ -97,6 +139,16 @@ class Erray : public ErrExpr<Erray<T>, T> {
         return m_elems[to_flat(i, j, k)];
     }
 
+    inline T operator[](const ull index) const {
+        ASSERT(index < size(), "[] indexing out of bounds");
+        return m_elems[index];
+    }
+
+    inline T &operator[](const ull index) {
+        ASSERT(index < size(), "[] indexing out of bounds");
+        return m_elems[index];
+    }
+
     inline Tripple shape(void) const { return m_shape; }
 
     inline ull size(void) const { return m_shape.i * m_shape.j * m_shape.k; }
@@ -106,8 +158,8 @@ class Erray : public ErrExpr<Erray<T>, T> {
      */
     Erray(const ull i = 1, const ull j = 1, const ull k = 1)
         : m_shape(Tripple{i, j, k}) {
-        assert(size() != 0);
-        cout << "construct" << endl;
+        ASSERT(size() != 0, "Can't have any Erray dimension equal to zero");
+        dcout("Constructing Erray");
         m_elems = new T[size()];
     }
 
@@ -115,7 +167,7 @@ class Erray : public ErrExpr<Erray<T>, T> {
      * Copy construct
      */
     Erray(Erray<T> const &err) : m_shape(err.shape()) {
-        cout << "cpy construct" << endl;
+        dcout("Copy constructing Erray");
 
         m_elems = new T[size()];
 
@@ -132,7 +184,7 @@ class Erray : public ErrExpr<Erray<T>, T> {
      * Move construct
      */
     Erray(Erray<T> &&other) : m_shape(other.shape()) {
-        cout << "move construct" << endl;
+        dcout("Move construct Erray");
         m_elems = std::exchange(other.m_elems, nullptr);
     }
 
@@ -140,10 +192,10 @@ class Erray : public ErrExpr<Erray<T>, T> {
      * Move operator
      */
     Erray<T> &operator=(Erray<T> &&other) noexcept {
-        cout << "move assign" << endl;
+        dcout("Assign Erray to move &&ref - move assign");
 
         if (this != &other) {
-            assert(shape() == other.shape());
+            ASSERT(shape() == other.shape(), "Shape check in move assign");
             delete[] m_elems;
             m_elems = std::exchange(other.m_elems, nullptr);
         }
@@ -154,10 +206,10 @@ class Erray : public ErrExpr<Erray<T>, T> {
      * Assignment operator
      */
     Erray<T> &operator=(const Erray<T> &other) {
-        cout << "copy  assign" << endl;
+        dcout("Assign Erray to Erray");
 
         if (this != &other) {
-            assert(shape() == other.shape());
+            ASSERT(shape() == other.shape(), "Shape check in assignment");
 
             for (ull i = 0; i < shape().i; ++i) {
                 for (ull j = 0; j < shape().j; ++j) {
@@ -174,7 +226,8 @@ class Erray : public ErrExpr<Erray<T>, T> {
      * Assignment to scalar
      */
     Erray<T> &operator=(const T scalar) {
-        cout << "scalar assign" << endl;
+        dcout("Assign Erray to scalar");
+
         for (ull i = 0; i < shape().i; ++i) {
             for (ull j = 0; j < shape().j; ++j) {
                 for (ull k = 0; k < shape().k; ++k) {
@@ -191,7 +244,7 @@ class Erray : public ErrExpr<Erray<T>, T> {
      */
     template <typename E>
     Erray(ErrExpr<E, T> const &expr) : m_shape(expr.shape()) {
-        cout << "expr construct" << endl;
+        dcout("Construct Erray from erray expression");
 
         m_elems = new T[size()];
 
@@ -210,8 +263,8 @@ class Erray : public ErrExpr<Erray<T>, T> {
      */
     template <typename E>
     Erray<T> &operator=(ErrExpr<E, T> const &expr) {
-        cout << "expr assign" << endl;
-        assert(shape() == expr.shape());
+        dcout("Assign Erray to erray expression");
+        ASSERT(shape() == expr.shape(), "Shape check in expression assign");
 
         for (ull i = 0; i < shape().i; ++i) {
             for (ull j = 0; j < shape().j; ++j) {
@@ -225,22 +278,22 @@ class Erray : public ErrExpr<Erray<T>, T> {
     }
 
     ~Erray() {
-        cout << "del" << endl;
+        dcout("Delete Erray");
         delete[] m_elems;
         m_elems = nullptr;
     }
 
     Window<T> window(const ull i0, const ull i1) {
-        assert(i1 > i0);
-        assert(i1 <= shape().i);
+        ASSERT(i1 > i0, "Window bound 1");
+        ASSERT(i1 <= shape().i, "Window shape 1");
 
         return Window<T>{std::move(*this), Tripple{i0, 0, 0},
                          Tripple{i1 - i0, shape().j, shape().k}};
     }
 
     Window<T> window(const ull i0, const ull i1, const ull i2, const ull i3) {
-        assert(i1 > i0 && i3 > i2);
-        assert(i1 <= shape().i && i3 <= shape().j);
+        ASSERT(i1 > i0 && i3 > i2, "Window bound 2");
+        ASSERT(i1 <= shape().i && i3 <= shape().j, "Window shape 1");
 
         return Window<T>{std::move(*this), Tripple{i0, i2, 0},
                          Tripple{i1 - i0, i3 - i2, shape().k}};
@@ -248,8 +301,9 @@ class Erray : public ErrExpr<Erray<T>, T> {
 
     Window<T> window(const ull i0, const ull i1, const ull i2, const ull i3,
                      const ull i4, const ull i5) {
-        assert(i1 > i0 && i3 > i2 && i5 > i4);
-        assert(i1 <= shape().i && i3 <= shape().j && i5 <= shape().k);
+        ASSERT(i1 > i0 && i3 > i2 && i5 > i4, "Window bound 3");
+        ASSERT(i1 <= shape().i && i3 <= shape().j && i5 <= shape().k,
+               "Window shape 1");
 
         return Window<T>{std::move(*this), Tripple{i0, i2, i4},
                          Tripple{i1 - i0, i3 - i2, i5 - i4}};
@@ -270,7 +324,7 @@ template <typename T>
 class Window : public ErrExpr<Window<T>, T> {
    public:
     T *m_elems = nullptr;
-    Tripple m_shape;
+    Tripple m_shape{0, 0, 0};
     Tripple m_offset{0, 0, 0};
     Tripple m_modded_shape{0, 0, 0};
 
@@ -299,11 +353,12 @@ class Window : public ErrExpr<Window<T>, T> {
      * Move construct the window class
      */
     Window(Window<T> &&other)
-        : m_shape{other.m_shape},
+        : m_elems{other.m_elems},
+          m_shape{other.m_shape},
           m_offset{other.m_offset},
           m_modded_shape{other.m_modded_shape} {
         cout << "move construct 2" << endl;
-        m_elems = std::exchange(other.m_elems, nullptr);
+        // m_elems = other.m_elems;
     }
 
     Window(Erray<T> &&other, Tripple const &o, Tripple const &w)
@@ -334,12 +389,31 @@ class Window : public ErrExpr<Window<T>, T> {
     }
 
     /**
+     * Assignment operator
+     */
+    Window<T> &operator=(const Window<T> &other) {
+        dcout("win copy assign");
+        if (this != &other) {
+            assert(shape() == other.shape());
+
+            for (ull i = 0; i < shape().i; ++i) {
+                for (ull j = 0; j < shape().j; ++j) {
+                    for (ull k = 0; k < shape().k; ++k) {
+                        m_elems[to_flat(i, j, k)] = other(i, j, k);
+                    }
+                }
+            }
+        }
+        return *this;
+    }
+
+    /**
      * Evaluates an expression and sets the Erray to be that evaluated
      * expression through use of the = operator
      */
     template <typename E>
     Window<T> &operator=(ErrExpr<E, T> const &expr) {
-        cout << "win expr assign" << endl;
+        dcout("win expr assign");
         assert(shape() == expr.shape());
 
         for (ull i = 0; i < shape().i; ++i) {

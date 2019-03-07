@@ -1,7 +1,8 @@
 /**
  * erray_funct.hpp
  *
- * The following code (part of the erray module) is © 2019 C. J. Williams.
+ * The following code (part of the erray module) is Copyright © 2019 C. J.
+ * Williams, all rights reserved.
  *
  * Part of the erray module implementing 1, 2 and 3 dimensional arrays using
  * expression templates.
@@ -107,6 +108,36 @@ T min(ErrExpr<E, T> const &expr) {
 /*----------------------------------------------------------------------------*/
 
 /**
+ * @brief      swaps the elements in two window views accepts rvalue
+ *
+ * @param      left   The left window
+ * @param      right  The right window
+ *
+ * @tparam     T      underlying Erray type
+ */
+template <typename T>
+void swap(Window<T> &&left, Window<T> &&right) {
+    cj::erray::Erray<T> tmp{left};
+    left = right;
+    right = tmp;
+}
+
+/**
+ * @brief      swaps the elements in two window views
+ *
+ * @param      left   The left window
+ * @param      right  The right window
+ *
+ * @tparam     T      underlying Erray type
+ */
+template <typename T>
+void swap(Window<T> &left, Window<T> &right) {
+    cj::erray::Erray<T> tmp{left};
+    left = right;
+    right = tmp;
+}
+
+/**
  * @brief      print any Erray expression
  *
  * @param[in]  err   input expression
@@ -202,7 +233,7 @@ template <typename T>
 Erray<T> ones(const ull i, const ull j, const ull k) {
     Erray<T> out{i, j, k};
 
-    for (ull _k = 0; _k < i; ++_k) {
+    for (ull _k = 0; _k < k; ++_k) {
         for (ull _j = 0; _j < j; ++_j) {
             for (ull _i = 0; _i < i; ++_i) {
                 out(_i, _j, _k) = 1;

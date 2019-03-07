@@ -1,7 +1,8 @@
 /**
  * erray_core.hpp
  *
- * The following code (part of the erray module) is © 2019 C. J. Williams.
+ * The following code (part of the erray module) is Copyright © 2019 C. J.
+ * Williams, all rights reserved.
  *
  * This is the outer header file for the core headers bundle from the errey
  * module, implementing 1 , 2 and 3 dimensional arrays using expression
@@ -19,11 +20,15 @@
  *
  * Errays can be printed through an overload of std::cout.
  *
- * operations: +, -, *, /, pow(), %, abs(), log(), ln(), log2(), cross(), mm()
- * functions: sum(), min(), max(), avg()
- * initialise: empty(), zeros(), ones(), linspace(), enumerate()
+ * operations: +, -, *, /, pow(), %, abs(), log(), ln(), log2(), cross(), mm(),\
+ *             sqrt(), transpose(), reshape()
  *
- * Erray operations/assignments are - were appropriate - compatible with
+ * functions: sum(), min(), max(), avg(), swap(windows)
+ *
+ * initialise: empty(), zeros() ones(), linspace(), enumerate(), random(),
+ * random_int()
+ *
+ * Erray operations/assignments are - where appropriate - compatible with
  * "scalars" i.e entities of the erray expression base type, T.
  *
  * Errays expressions are optimised to work with trivial/base types however the
@@ -31,9 +36,18 @@
  * for any type.
  *
  * All shape checking can be disabled through the "#define NDEBUG" macro.
+ * All debug printing can be enabled through the "#define DEBUGCOUT" macro.
  *
- * TODO CONVERT ALL T PASSES TO PASS BY VALUE
+ */
+
+/**
+ * TODO: add comments to base.hpp and switch to dcout()
+ * TODO: swap shape checking to custom macro and add macro bound checking,
+ *       remove unused includes
+ * TODO: update COMMON_MACRO
+ * TODO: implement missing stuff
  *
+ * TODO: build fft header bundle
  */
 
 #ifndef ERRAY_HPP
@@ -43,7 +57,6 @@
 #include <cmath>
 #include <comforts.hpp>
 #include <iostream>
-#include <type_traits>
 #include <utility>
 
 namespace cj {
@@ -81,10 +94,10 @@ ErraySum<Elhs, Erhs, T> operator+(ErrExpr<Elhs, T> const &u,
                                   ErrExpr<Erhs, T> const &v);
 
 template <typename T, typename Erhs>
-ErrayScalSum<T, Erhs> operator+(T const &u, ErrExpr<Erhs, T> const &v);
+ErrayScalSum<T, Erhs> operator+(T const u, ErrExpr<Erhs, T> const &v);
 
 template <typename T, typename Erhs>
-ErrayScalSum<T, Erhs> operator+(ErrExpr<Erhs, T> const &v, T const &u);
+ErrayScalSum<T, Erhs> operator+(ErrExpr<Erhs, T> const &v, T const u);
 
 /*----------------------------------------------------------------------------*/
 
@@ -99,10 +112,10 @@ ErrayMul<Elhs, Erhs, T> operator*(ErrExpr<Elhs, T> const &u,
                                   ErrExpr<Erhs, T> const &v);
 
 template <typename T, typename Erhs>
-ErrayScalMul<T, Erhs> operator*(T const &u, ErrExpr<Erhs, T> const &v);
+ErrayScalMul<T, Erhs> operator*(T const u, ErrExpr<Erhs, T> const &v);
 
 template <typename T, typename Erhs>
-ErrayScalMul<T, Erhs> operator*(ErrExpr<Erhs, T> const &v, T const &u);
+ErrayScalMul<T, Erhs> operator*(ErrExpr<Erhs, T> const &v, T const u);
 
 /*----------------------------------------------------------------------------*/
 
@@ -141,6 +154,14 @@ template <typename T, typename E>
 Slice<T, E> slice(ErrExpr<E, T> const &expr, const ull i0, const ull i1,
                   const ull i2, const ull i3, const ull i4, const ull i5);
 
+/*----------------------------------------------------------------------------*/
+
+template <typename E, typename T, typename Funct>
+class ErrayElemWise;
+
+template <typename Funct, typename E, typename T>
+ErrayElemWise<E, T, Funct> elem_wise(ErrExpr<E, T> const &v);
+
 // ****************************************************************************
 // *                           Prototypes functions                           *
 // ****************************************************************************
@@ -153,6 +174,21 @@ T max(ErrExpr<E, T> const &expr);
 
 template <typename E, typename T>
 T min(ErrExpr<E, T> const &expr);
+
+/*----------------------------------------------------------------------------*/
+
+template <typename T>
+void swap(Window<T> &left, Window<T> &right);
+
+template <typename T>
+void swap(Window<T> &&left, Window<T> &&right);
+
+template <typename T, typename E>
+void print(const ErrExpr<E, T> &err);
+
+template <typename E, typename T>
+std::ostream &operator<<(std::ostream &stream,
+                         const cj::erray::ErrExpr<E, T> &err);
 
 /*----------------------------------------------------------------------------*/
 
@@ -173,15 +209,6 @@ Erray<T> linspace(const ull first = 0, const ull last = 1, const ull N = 50);
 
 template <typename T, ull step = 1, ull start = 0>
 Erray<T> enumerate(const ull i, const ull j = 1, const ull k = 1);
-
-/*----------------------------------------------------------------------------*/
-
-template <typename T, typename E>
-void print(const ErrExpr<E, T> &err);
-
-template <typename E, typename T>
-std::ostream &operator<<(std::ostream &stream,
-                         const cj::erray::ErrExpr<E, T> &err);
 
 // ****************************************************************************
 // *                   Including Sub-Headers for core bundle                  *

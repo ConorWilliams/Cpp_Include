@@ -1,30 +1,91 @@
+/**
+ * comforts.hpp
+ *
+ * A collection of macros, small functions and small classes to make everything
+ * a bit easier.
+ */
+
 #ifndef SHUFFLE_HPP
 #define SHUFFLE_HPP
 
-#include <cxxabi.h>
+#include <cxxabi.h>  //de-mangle
 #include <time.h>
 #include <cstdint>  //type defs
 #include <iostream>
 #include <utility>
 #include "gsl/gsl_rng.h"
 
-/**
- * Macro to return name of a class
- * @param  A any class or type
- * @return   cout the class name
- */
-int STATUS = 0;
-char *DEMANGLED = nullptr;
-#define id(input)                                                         \
-                                                                          \
-    DEMANGLED = abi::__cxa_demangle(typeid(input).name(), 0, 0, &STATUS); \
-    std::cout << DEMANGLED << std::endl;                                  \
-    free(DEMANGLED);
-
 namespace cj {
 
+using std::cout;
+using std::endl;
+
+typedef unsigned long long int ull;
+
+#ifdef DEBUGCOUT
 /**
- * Simple Knuth shuffle
+ * @brief      Macro to cout debug data, enable with "#define DEBUGCOUT" macro
+ *
+ * @param      string  The string to cout
+ */
+#define dcout(string) cout << string << endl
+#else
+#define dcout(string) ((void)0)
+#endif  // NDBGCOUT
+
+/**
+ * @brief      macro like assert with custom error message and better debug
+ * message
+ *
+ * @param      CONDITIONAL  conditional statement to evaluate
+ * @param      MESSAGE      The message to add to the output
+ *
+ */
+#ifdef CHECK_ON
+#define ASSERT(CONDITIONAL, MESSAGE)                                           \
+    if (!(CONDITIONAL)) {                                                      \
+        cout << "/*---------------------ERROR---------------------*/" << endl; \
+        cout << "In: '" << __FILE__ << "'" << endl;                            \
+        cout << "On line: " << __LINE__ << endl;                               \
+        cout << "Condition '" << #CONDITIONAL << "' false" << endl;            \
+        cout << "Message: " << MESSAGE << std::endl;                           \
+        cout << "/*--------------------Exiting--------------------*/" << endl; \
+        std::exit(0);                                                          \
+    }                                                                          \
+    ((void)0)
+#else
+#define ASSERT(x, message) ((void)0)
+#endif
+
+/*----------------------------------------------------------------------------*/
+
+/**
+ * @brief      cout the type of any input
+ *
+ * @param      in    the input whose type name to cout
+ *
+ * @tparam     T     template parameter
+ */
+template <typename T>
+void id(T const &in) {
+    int status = 0;
+    char *demangled = abi::__cxa_demangle(typeid(in).name(), 0, 0, &status);
+    std::cout << demangled << std::endl;
+    free(demangled);
+    return;
+}
+
+/*----------------------------------------------------------------------------*/
+
+/**
+ * @brief      performs a Knuth shuffle on a input of length N indexable
+ * with the [] operator
+ *
+ * @param      cards               The cards to shuffle
+ * @param[in]  N                   number of elements in cards
+ * @param[in]  NUMBER_OF_SHUFFLES  The number of shuffles to do, default 1
+ *
+ * @tparam     T                   type of cards
  */
 template <class T>
 void knuth_shuffle(T &cards, uint_fast32_t N,
@@ -48,8 +109,9 @@ void knuth_shuffle(T &cards, uint_fast32_t N,
 // *                              Tripple Struct                              *
 // ****************************************************************************
 
-typedef unsigned long long int ull;
-
+/**
+ * @brief      Struct to hold 3 values
+ */
 struct Tripple {
     ull i, j, k;
 
@@ -66,9 +128,13 @@ struct Tripple {
 };
 
 /**
- * Overloading iostream cout << to auto print Tripples
+ * @brief      overloading cout << to print Tripples
+ *
+ * @param      stream  The input stream
+ * @param[in]  trip    The tripple to print
+ *
+ * @return     returns the stream
  */
-
 std::ostream &operator<<(std::ostream &stream, const cj::Tripple &trip) {
     std::cout << trip.i << " " << trip.j << " " << trip.k;
     return stream;
