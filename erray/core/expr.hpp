@@ -286,33 +286,15 @@ Slice<T, E> slice(ErrExpr<E, T> const &expr, const ull i0, const ull i1,
 template <typename E, typename T, typename Funct>
 class ErrayElemWise : public ErrExpr<ErrayElemWise<E, T, Funct>, T> {
     ErrExpr<E, T> const &_v;
-    static const Funct foo;
 
    public:
     T operator()(const ull i = 0, const ull j = 0, const ull k = 0) const {
-        return foo(_v(i, j, k));
+        return Funct::operate(_v(i, j, k));
     }
 
     ErrayElemWise(ErrExpr<E, T> const &v) : _v{v} {}
 
     COMMON_MACRO
 };
-
-/**
- * @brief      function to produce an ErrayElemWise class for erray expressions
- *             see class for full detail
- *
- * @param      v      the input erray expression
- *
- * @tparam     Funct  functor wrapping function
- * @tparam     E      curiously  recursive type
- * @tparam     T      underlying Erray type
- *
- * @return     an ErrayElemWise class
- */
-template <typename Funct, typename E, typename T>
-ErrayElemWise<E, T, Funct> elem_wise(ErrExpr<E, T> const &v) {
-    return ErrayElemWise<E, T, Funct>{v};
-}
 
 #endif  // ERRAY_EXPR_HPP

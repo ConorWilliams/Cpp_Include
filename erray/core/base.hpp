@@ -34,20 +34,17 @@
  *             input function into a functor object.
  *
  * @param      FUNCTION   The function to apply element-wise
- * @param      METHODNAME  The name of the method for accessing this
- *             "Function"Functor
+ * @param      METHODNAME  The name of the method for accessing this function
  *
- * @return     { description_of_the_return_value }
  */
-#define ELEM_FUNCT_MACRO(FUNCTION, METHODNAME)                         \
-                                                                       \
-    struct METHODNAME##_FunctorWrapper {                               \
-        inline T operator()(T input) const { return FUNCTION(input); } \
-        METHODNAME##_FunctorWrapper() = default;                       \
-    };                                                                 \
-    inline auto METHODNAME(void) const {                               \
-        return cj::erray::elem_wise<METHODNAME##_FunctorWrapper>(      \
-            static_cast<E const &>(*this));                            \
+#define ELEM_FUNCT_MACRO(FUNCTION, METHODNAME)                              \
+                                                                            \
+    struct METHODNAME##_FunctorWrapper {                                    \
+        static inline const T operate(T input) { return FUNCTION(input); }  \
+    };                                                                      \
+    inline auto METHODNAME(void) const {                                    \
+        return cj::erray::ErrayElemWise<E, T, METHODNAME##_FunctorWrapper>{ \
+            static_cast<E const &>(*this)};                                 \
     }
 
 /**
@@ -102,10 +99,55 @@ class ErrExpr {
         return cj::erray::pow(static_cast<E const &>(*this), err);
     }
 
+    /**
+     * Including most functions from <cmath>
+     */
     ELEM_FUNCT_MACRO(std::cos, cos)
     ELEM_FUNCT_MACRO(std::sin, sin)
     ELEM_FUNCT_MACRO(std::tan, tan)
+
+    ELEM_FUNCT_MACRO(std::acos, acos)
+    ELEM_FUNCT_MACRO(std::asin, asin)
+    ELEM_FUNCT_MACRO(std::atan, atan)
+
+    ELEM_FUNCT_MACRO(std::cosh, cosh)
+    ELEM_FUNCT_MACRO(std::sinh, sinh)
+    ELEM_FUNCT_MACRO(std::tanh, tanh)
+
+    ELEM_FUNCT_MACRO(std::acosh, acosh)
+    ELEM_FUNCT_MACRO(std::asinh, asinh)
+    ELEM_FUNCT_MACRO(std::atanh, atanh)
+
+    ELEM_FUNCT_MACRO(std::exp, exp)
+    ELEM_FUNCT_MACRO(std::exp2, exp2)
+    ELEM_FUNCT_MACRO(std::expm1, expm1)
+
+    ELEM_FUNCT_MACRO(std::log, log)
+    ELEM_FUNCT_MACRO(std::log2, log2)
+    ELEM_FUNCT_MACRO(std::log10, log10)
+    ELEM_FUNCT_MACRO(std::log1p, log1p)
+
+    ELEM_FUNCT_MACRO(std::sqrt, sqrt)
+    ELEM_FUNCT_MACRO(std::cbrt, cbrt)
+
+    ELEM_FUNCT_MACRO(std::erf, erf)
+    ELEM_FUNCT_MACRO(std::erfc, erfc)
+    ELEM_FUNCT_MACRO(std::tgamma, tgamma)
+    ELEM_FUNCT_MACRO(std::lgamma, lgamma)
+
+    ELEM_FUNCT_MACRO(std::ceil, ceil)
+    ELEM_FUNCT_MACRO(std::floor, floor)
+    ELEM_FUNCT_MACRO(std::trunc, trunc)
+
     ELEM_FUNCT_MACRO(std::abs, abs)
+
+    /**
+     * including functions from <complex>
+     */
+    ELEM_FUNCT_MACRO(std::real, real)
+    ELEM_FUNCT_MACRO(std::imag, imag)
+    ELEM_FUNCT_MACRO(std::arg, arg)
+    ELEM_FUNCT_MACRO(std::conj, conj)
 };
 
 // ****************************************************************************
@@ -154,7 +196,11 @@ class Erray : public ErrExpr<Erray<T>, T> {
     inline ull size(void) const { return m_shape.i * m_shape.j * m_shape.k; }
 
     /**
-     * main constructor
+     * @brief      Constructs the object.
+     *
+     * @param[in]  i     size in i dir
+     * @param[in]  j     size in j dir
+     * @param[in]  k     size in k dir
      */
     Erray(const ull i = 1, const ull j = 1, const ull k = 1)
         : m_shape(Tripple{i, j, k}) {
@@ -164,7 +210,9 @@ class Erray : public ErrExpr<Erray<T>, T> {
     }
 
     /**
-     * Copy construct
+     * @brief      Copy constructs the object from Erray.
+     *
+     * @param      err   The Erray to copy
      */
     Erray(Erray<T> const &err) : m_shape(err.shape()) {
         dcout("Copy constructing Erray");
@@ -181,7 +229,9 @@ class Erray : public ErrExpr<Erray<T>, T> {
     }
 
     /**
-     * Move construct
+     * @brief      Move construct the Erray
+     *
+     * @param      other  the other Erray to move from
      */
     Erray(Erray<T> &&other) : m_shape(other.shape()) {
         dcout("Move construct Erray");
@@ -189,7 +239,11 @@ class Erray : public ErrExpr<Erray<T>, T> {
     }
 
     /**
-     * Move operator
+     * @brief      Move assign Erray to Erray
+     *
+     * @param      other  The other Erray to move from
+     *
+     * @return     an Erray
      */
     Erray<T> &operator=(Erray<T> &&other) noexcept {
         dcout("Assign Erray to move &&ref - move assign");
@@ -203,7 +257,11 @@ class Erray : public ErrExpr<Erray<T>, T> {
     }
 
     /**
-     * Assignment operator
+     * @brief      Assign Erray to Erray
+     *
+     * @param      other  The other Erray
+     *
+     * @return     deep copy of the other Erray
      */
     Erray<T> &operator=(const Erray<T> &other) {
         dcout("Assign Erray to Erray");
@@ -223,24 +281,35 @@ class Erray : public ErrExpr<Erray<T>, T> {
     }
 
     /**
-     * Assignment to scalar
+     * @brief      Assign every element in Erray to be equal to a scalar
+     *
+     * @param[in]  scalar  The scalar to assign to every element
+     *
+     * @return     Erray with all values assigned to scalar
      */
     Erray<T> &operator=(const T scalar) {
         dcout("Assign Erray to scalar");
 
-        for (ull i = 0; i < shape().i; ++i) {
-            for (ull j = 0; j < shape().j; ++j) {
-                for (ull k = 0; k < shape().k; ++k) {
+        Tripple tmp{shape()};
+
+        for (ull i = 0; i < tmp.i; ++i) {
+            for (ull j = 0; j < tmp.j; ++j) {
+                for (ull k = 0; k < tmp.k; ++k) {
                     m_elems[to_flat(i, j, k)] = scalar;
                 }
             }
         }
+
         return *this;
     }
 
     /**
-     * Evaluates an expression and sets a new Erray to be equal to the evaluated
-     * expression
+     * @brief      Construct an Erray from an erray expression, lazily evaluates
+     *             expression during this phase
+     *
+     * @param      expr  The erray expression
+     *
+     * @return     evaluated expression
      */
     template <typename E>
     Erray(ErrExpr<E, T> const &expr) : m_shape(expr.shape()) {
@@ -248,9 +317,11 @@ class Erray : public ErrExpr<Erray<T>, T> {
 
         m_elems = new T[size()];
 
-        for (ull i = 0; i < shape().i; ++i) {
-            for (ull j = 0; j < shape().j; ++j) {
-                for (ull k = 0; k < shape().k; ++k) {
+        Tripple tmp{shape()};
+
+        for (ull i = 0; i < tmp.i; ++i) {
+            for (ull j = 0; j < tmp.j; ++j) {
+                for (ull k = 0; k < tmp.k; ++k) {
                     m_elems[to_flat(i, j, k)] = expr(i, j, k);
                 }
             }
@@ -258,17 +329,23 @@ class Erray : public ErrExpr<Erray<T>, T> {
     }
 
     /**
-     * Evaluates an expression and sets the Erray to be that evaluated
-     * expression through use of the = operator
+     * @brief      Assign the Erray to erray expression, lazily evaluates
+     *             expression during this phase
+     *
+     * @param      expr  The erray expression
+     *
+     * @return     evaluated expression
      */
     template <typename E>
     Erray<T> &operator=(ErrExpr<E, T> const &expr) {
         dcout("Assign Erray to erray expression");
         ASSERT(shape() == expr.shape(), "Shape check in expression assign");
 
-        for (ull i = 0; i < shape().i; ++i) {
-            for (ull j = 0; j < shape().j; ++j) {
-                for (ull k = 0; k < shape().k; ++k) {
+        Tripple tmp{shape()};
+
+        for (ull i = 0; i < tmp.i; ++i) {
+            for (ull j = 0; j < tmp.j; ++j) {
+                for (ull k = 0; k < tmp.k; ++k) {
                     m_elems[to_flat(i, j, k)] = expr(i, j, k);
                 }
             }
@@ -283,6 +360,18 @@ class Erray : public ErrExpr<Erray<T>, T> {
         m_elems = nullptr;
     }
 
+    /**
+     * @brief      Set of methods to construct a window into the Erray
+     *
+     * @param[in]  i0    first element along i axis
+     * @param[in]  i1    last element along i axis + 1
+     * @param[in]  i2    first element along j axis
+     * @param[in]  i3    last element along j axis + 1
+     * @param[in]  i4    first element along k axis
+     * @param[in]  i5    last element along k axis + 1
+     *
+     * @return     Window to erray
+     */
     Window<T> window(const ull i0, const ull i1) {
         ASSERT(i1 > i0, "Window bound 1");
         ASSERT(i1 <= shape().i, "Window shape 1");

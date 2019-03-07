@@ -56,6 +56,7 @@
 #include <cassert>
 #include <cmath>
 #include <comforts.hpp>
+#include <complex>
 #include <iostream>
 #include <utility>
 
@@ -159,9 +160,6 @@ Slice<T, E> slice(ErrExpr<E, T> const &expr, const ull i0, const ull i1,
 template <typename E, typename T, typename Funct>
 class ErrayElemWise;
 
-template <typename Funct, typename E, typename T>
-ErrayElemWise<E, T, Funct> elem_wise(ErrExpr<E, T> const &v);
-
 // ****************************************************************************
 // *                           Prototypes functions                           *
 // ****************************************************************************
@@ -192,22 +190,22 @@ std::ostream &operator<<(std::ostream &stream,
 
 /*----------------------------------------------------------------------------*/
 
-template <typename T>
+template <typename T = double>
 Erray<T> empty(const ull i = 1, const ull j = 1, const ull k = 1);
 
-template <typename T>
+template <typename T = double>
 Erray<T> ones(const ull i = 1, const ull j = 1, const ull k = 1);
 
-template <typename T>
+template <typename T = double>
 Erray<T> zeros(const ull i = 1, const ull j = 1, const ull k = 1);
 
-template <typename T>
+template <typename T = double>
 Erray<T> identity(const ull i = 1, ull j = 0);
 
-template <typename T>
+template <typename T = double>
 Erray<T> linspace(const ull first = 0, const ull last = 1, const ull N = 50);
 
-template <typename T, ull step = 1, ull start = 0>
+template <typename T = double, ull step = 1, ull start = 0>
 Erray<T> enumerate(const ull i, const ull j = 1, const ull k = 1);
 
 // ****************************************************************************
@@ -221,5 +219,7 @@ Erray<T> enumerate(const ull i, const ull j = 1, const ull k = 1);
 }  // namespace erray
 
 }  // namespace cj
+
+typedef cj::erray::Erray<double> derray;
 
 #endif  // ERRAY_HPP
