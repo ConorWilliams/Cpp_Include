@@ -13,21 +13,20 @@
  * erray expressions and return an erray expression that can be further
  * compounded.
  *
- * These erray expressions build an "expression tree", that enable lazy
- * evaluation of expressions upon assignment to an Erray eliminating temporaries
- * and repeated looping over Errays.
  *
  */
 
 #ifndef ERRAY_EXPR_HPP
 #define ERRAY_EXPR_HPP
+#include <erray/core.hpp>
+
+namespace cj {
+namespace erray {
 
 // ****************************************************************************
 // *   Classes, operators and functions for the Erray class returning         *
 // *                           expression templates                           *
 // ****************************************************************************
-
-#include <erray/core.hpp>
 
 /* Macro used in most of the derived classes that make up Erray expressions */
 
@@ -296,5 +295,80 @@ class ErrayElemWise : public ErrExpr<ErrayElemWise<E, T, Funct>, T> {
 
     COMMON_MACRO
 };
+
+// ****************************************************************************
+// *                                 Transpose                                *
+// ****************************************************************************
+
+/**
+ * @brief      Transpose an Erray switching i and j
+ *
+ * @tparam     E     curiously  recursive type
+ * @tparam     T     underlying Erray type
+ */
+template <typename T, typename E>
+class Transpose : public ErrExpr<Transpose<T, E>, T> {
+    ErrExpr<E, T> const &_v;
+    Tripple const _shape{0, 0, 0};
+
+   public:
+    T operator()(const ull i = 0, const ull j = 0, const ull k = 0) const {
+        return _v(j, i, k);
+    }
+
+    Transpose(ErrExpr<E, T> const &v)
+        : _v{v}, _shape{v.shape().j, v.shape().i, v.shape().k} {}
+
+    Tripple shape(void) const { return _shape; }
+
+    ull size(void) const { return _v.size(); }
+};
+
+// ****************************************************************************
+// *                           Matrix Multiplication                          *
+// ****************************************************************************
+
+template <typename Elhs, typename Erhs, typename T>
+class ErrayMM : public ErrExpr<ErrayMM<Elhs, Erhs, T>, T> {
+    ErrExpr<Elhs, T> const &_u;
+    ErrExpr<Erhs, T> const &_v;
+    ull const _sum_length;
+    Tripple const _shape{0, 0, 0};
+    ull const _size;
+
+   public:
+    T operator()(const ull i = 0, const ull j = 0, const ull k = 0) const {
+        T tmp = _u(i, 0) * _v(0, j);
+
+        for (ull index = 1; index < _sum_length; ++index) {
+            tmp += _u(i, index) * _v(index, j);
+        }
+        return tmp;
+    }
+
+    ErrayMM(ErrExpr<Elhs, T> const &u, ErrExpr<Erhs, T> const &v)
+        : _u{u},
+          _v{v},
+          _sum_length{u.shape().j},
+          _shape{u.shape().i, v.shape().j, 1},
+          _size{_shape.i * _shape.j} {
+        ASSERT(u.shape().j == v.shape().i, "Shapes wrong on ErrayMM");
+        ASSERT(u.shape().k == 1 && v.shape().k == 1, "ErrayMM for for 2D only");
+    }
+
+    Tripple shape(void) const { return _shape; }
+
+    ull size(void) const { return _size; }
+};
+/*----------------------------------------------------------------------------*/
+
+template <typename Elhs, typename Erhs, typename T>
+ErrayMM<Elhs, Erhs, T> mm(ErrExpr<Elhs, T> const &u,
+                          ErrExpr<Erhs, T> const &v) {
+    return ErrayMM<Elhs, Erhs, T>{u, v};
+}
+
+}  // namespace erray
+}  // namespace cj
 
 #endif  // ERRAY_EXPR_HPP

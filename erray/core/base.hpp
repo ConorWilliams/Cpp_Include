@@ -18,12 +18,14 @@
 
 #ifndef ERRAY_MAIN_HPP
 #define ERRAY_MAIN_HPP
+#include <erray/core.hpp>
+
+namespace cj {
+namespace erray {
 
 // ****************************************************************************
 // *               Base class for Errays and Erray expressions                *
 // ****************************************************************************
-
-#include <erray/core.hpp>
 
 /**
  * @brief      Macro for easily converting arbitrary functions that take a
@@ -37,14 +39,14 @@
  * @param      METHODNAME  The name of the method for accessing this function
  *
  */
-#define ELEM_FUNCT_MACRO(FUNCTION, METHODNAME)                              \
-                                                                            \
-    struct METHODNAME##_FunctorWrapper {                                    \
-        static inline const T operate(T input) { return FUNCTION(input); }  \
-    };                                                                      \
-    inline auto METHODNAME(void) const {                                    \
-        return cj::erray::ErrayElemWise<E, T, METHODNAME##_FunctorWrapper>{ \
-            static_cast<E const &>(*this)};                                 \
+#define ELEM_FUNCT_MACRO(FUNCTION, METHODNAME)                             \
+                                                                           \
+    struct METHODNAME##_Wrapper {                                          \
+        static inline const T operate(T input) { return FUNCTION(input); } \
+    };                                                                     \
+    inline auto METHODNAME(void) const {                                   \
+        return cj::erray::ErrayElemWise<E, T, METHODNAME##_Wrapper>{       \
+            static_cast<E const &>(*this)};                                \
     }
 
 /**
@@ -78,18 +80,6 @@ class ErrExpr {
                                 i4, i5);
     }
 
-    inline T sum(void) const {
-        return cj::erray::sum(static_cast<E const &>(*this));
-    }
-
-    inline T max(void) const {
-        return cj::erray::max(static_cast<E const &>(*this));
-    }
-
-    inline T min(void) const {
-        return cj::erray::max(static_cast<E const &>(*this));
-    }
-
     inline auto pow(T const scalar) const {
         return cj::erray::pow(static_cast<E const &>(*this), scalar);
     }
@@ -97,6 +87,10 @@ class ErrExpr {
     template <typename K>
     inline auto pow(ErrExpr<K, T> const &err) const {
         return cj::erray::pow(static_cast<E const &>(*this), err);
+    }
+
+    inline auto transpose(void) const {
+        return cj::erray::Transpose{static_cast<E const &>(*this)};
     }
 
     /**
@@ -148,6 +142,18 @@ class ErrExpr {
     ELEM_FUNCT_MACRO(std::imag, imag)
     ELEM_FUNCT_MACRO(std::arg, arg)
     ELEM_FUNCT_MACRO(std::conj, conj)
+
+    inline T sum(void) const {
+        return cj::erray::sum(static_cast<E const &>(*this));
+    }
+
+    inline T max(void) const {
+        return cj::erray::max(static_cast<E const &>(*this));
+    }
+
+    inline T min(void) const {
+        return cj::erray::max(static_cast<E const &>(*this));
+    }
 };
 
 // ****************************************************************************
@@ -219,9 +225,11 @@ class Erray : public ErrExpr<Erray<T>, T> {
 
         m_elems = new T[size()];
 
-        for (ull i = 0; i < shape().i; ++i) {
-            for (ull j = 0; j < shape().j; ++j) {
-                for (ull k = 0; k < shape().k; ++k) {
+        Tripple tmp{shape()};
+
+        for (ull i = 0; i < tmp.i; ++i) {
+            for (ull j = 0; j < tmp.j; ++j) {
+                for (ull k = 0; k < tmp.k; ++k) {
                     m_elems[to_flat(i, j, k)] = err(i, j, k);
                 }
             }
@@ -269,9 +277,11 @@ class Erray : public ErrExpr<Erray<T>, T> {
         if (this != &other) {
             ASSERT(shape() == other.shape(), "Shape check in assignment");
 
-            for (ull i = 0; i < shape().i; ++i) {
-                for (ull j = 0; j < shape().j; ++j) {
-                    for (ull k = 0; k < shape().k; ++k) {
+            Tripple tmp{shape()};
+
+            for (ull i = 0; i < tmp.i; ++i) {
+                for (ull j = 0; j < tmp.j; ++j) {
+                    for (ull k = 0; k < tmp.k; ++k) {
                         m_elems[to_flat(i, j, k)] = other(i, j, k);
                     }
                 }
@@ -299,7 +309,6 @@ class Erray : public ErrExpr<Erray<T>, T> {
                 }
             }
         }
-
         return *this;
     }
 
@@ -350,7 +359,6 @@ class Erray : public ErrExpr<Erray<T>, T> {
                 }
             }
         }
-
         return *this;
     }
 
@@ -372,7 +380,7 @@ class Erray : public ErrExpr<Erray<T>, T> {
      *
      * @return     Window to erray
      */
-    Window<T> window(const ull i0, const ull i1) {
+    Window<T> slice(const ull i0, const ull i1) {
         ASSERT(i1 > i0, "Window bound 1");
         ASSERT(i1 <= shape().i, "Window shape 1");
 
@@ -380,7 +388,7 @@ class Erray : public ErrExpr<Erray<T>, T> {
                          Tripple{i1 - i0, shape().j, shape().k}};
     }
 
-    Window<T> window(const ull i0, const ull i1, const ull i2, const ull i3) {
+    Window<T> slice(const ull i0, const ull i1, const ull i2, const ull i3) {
         ASSERT(i1 > i0 && i3 > i2, "Window bound 2");
         ASSERT(i1 <= shape().i && i3 <= shape().j, "Window shape 1");
 
@@ -388,8 +396,8 @@ class Erray : public ErrExpr<Erray<T>, T> {
                          Tripple{i1 - i0, i3 - i2, shape().k}};
     }
 
-    Window<T> window(const ull i0, const ull i1, const ull i2, const ull i3,
-                     const ull i4, const ull i5) {
+    Window<T> slice(const ull i0, const ull i1, const ull i2, const ull i3,
+                    const ull i4, const ull i5) {
         ASSERT(i1 > i0 && i3 > i2 && i5 > i4, "Window bound 3");
         ASSERT(i1 <= shape().i && i3 <= shape().j && i5 <= shape().k,
                "Window shape 1");
@@ -446,19 +454,19 @@ class Window : public ErrExpr<Window<T>, T> {
           m_shape{other.m_shape},
           m_offset{other.m_offset},
           m_modded_shape{other.m_modded_shape} {
-        cout << "move construct 2" << endl;
+        cout << "Move copy construct Window" << endl;
         // m_elems = other.m_elems;
     }
 
     Window(Erray<T> &&other, Tripple const &o, Tripple const &w)
         : m_shape(other.shape()), m_offset{o}, m_modded_shape{w} {
-        cout << "move construct 3" << endl;
+        cout << "Construct Window form Erray" << endl;
         m_elems = other.m_elems;
     }
 
     Window(Window<T> &&other, Tripple const &o, Tripple const &w)
         : m_shape{other.m_shape}, m_offset{o}, m_modded_shape{w} {
-        cout << "move construct 4" << endl;
+        cout << "Construct Window from Window" << endl;
         m_elems = other.m_elems;
     }
 
@@ -466,10 +474,13 @@ class Window : public ErrExpr<Window<T>, T> {
      * Assignment to scalar
      */
     Window<T> &operator=(const T scalar) {
-        cout << "win scalar assign" << endl;
-        for (ull i = 0; i < shape().i; ++i) {
-            for (ull j = 0; j < shape().j; ++j) {
-                for (ull k = 0; k < shape().k; ++k) {
+        cout << "Assign Window to scalar" << endl;
+
+        Tripple tmp{shape()};
+
+        for (ull i = 0; i < tmp.i; ++i) {
+            for (ull j = 0; j < tmp.j; ++j) {
+                for (ull k = 0; k < tmp.k; ++k) {
                     m_elems[to_flat(i, j, k)] = scalar;
                 }
             }
@@ -481,13 +492,15 @@ class Window : public ErrExpr<Window<T>, T> {
      * Assignment operator
      */
     Window<T> &operator=(const Window<T> &other) {
-        dcout("win copy assign");
+        dcout("Assign Window to Window");
         if (this != &other) {
             assert(shape() == other.shape());
 
-            for (ull i = 0; i < shape().i; ++i) {
-                for (ull j = 0; j < shape().j; ++j) {
-                    for (ull k = 0; k < shape().k; ++k) {
+            Tripple tmp{shape()};
+
+            for (ull i = 0; i < tmp.i; ++i) {
+                for (ull j = 0; j < tmp.j; ++j) {
+                    for (ull k = 0; k < tmp.k; ++k) {
                         m_elems[to_flat(i, j, k)] = other(i, j, k);
                     }
                 }
@@ -502,23 +515,22 @@ class Window : public ErrExpr<Window<T>, T> {
      */
     template <typename E>
     Window<T> &operator=(ErrExpr<E, T> const &expr) {
-        dcout("win expr assign");
+        dcout("Assign Window to erray expression");
         assert(shape() == expr.shape());
 
-        for (ull i = 0; i < shape().i; ++i) {
-            for (ull j = 0; j < shape().j; ++j) {
-                for (ull k = 0; k < shape().k; ++k) {
+        Tripple tmp{shape()};
+
+        for (ull i = 0; i < tmp.i; ++i) {
+            for (ull j = 0; j < tmp.j; ++j) {
+                for (ull k = 0; k < tmp.k; ++k) {
                     m_elems[to_flat(i, j, k)] = expr(i, j, k);
                 }
             }
         }
-
         return *this;
     }
 
-    ~Window() { cout << "win del" << endl; }
-
-    Window<T> window(const ull i0, const ull i1) {
+    Window<T> slice(const ull i0, const ull i1) {
         assert(i1 > i0);
         assert(i1 <= shape().i);
 
@@ -526,7 +538,7 @@ class Window : public ErrExpr<Window<T>, T> {
                          Tripple{i1 - i0, shape().j, shape().k}};
     }
 
-    Window<T> window(const ull i0, const ull i1, const ull i2, const ull i3) {
+    Window<T> slice(const ull i0, const ull i1, const ull i2, const ull i3) {
         assert(i1 > i0 && i3 > i2);
         assert(i1 <= shape().i && i3 <= shape().j);
 
@@ -535,8 +547,8 @@ class Window : public ErrExpr<Window<T>, T> {
                          Tripple{i1 - i0, i3 - i2, shape().k}};
     }
 
-    Window<T> window(const ull i0, const ull i1, const ull i2, const ull i3,
-                     const ull i4, const ull i5) {
+    Window<T> slice(const ull i0, const ull i1, const ull i2, const ull i3,
+                    const ull i4, const ull i5) {
         assert(i1 > i0 && i3 > i2 && i5 > i4);
         assert(i1 <= shape().i && i3 <= shape().j && i5 <= shape().k);
 
@@ -546,5 +558,8 @@ class Window : public ErrExpr<Window<T>, T> {
             Tripple{i1 - i0, i3 - i2, i5 - i4}};
     }
 };
+
+}  // namespace erray
+}  // namespace cj
 
 #endif  // ERRAY_MAIN_HPP

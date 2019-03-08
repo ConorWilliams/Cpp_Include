@@ -17,12 +17,14 @@
 
 #ifndef ERRAY_FUNCT_HPP
 #define ERRAY_FUNCT_HPP
+#include <erray/core.hpp>
 
 // ****************************************************************************
 // *                            erray expression in                           *
 // ****************************************************************************
 
-#include <erray/core.hpp>
+namespace cj {
+namespace erray {
 
 /**
  * @brief      Sums an Erray Expression
@@ -315,9 +317,11 @@ Erray<T> linspace(const ull first, const ull last, const ull N) {
     T step = static_cast<T>(last - first) / static_cast<T>(N - 1);
     ull count = 0;
 
-    for (ull k = 0; k < out.shape().k; ++k) {
-        for (ull j = 0; j < out.shape().j; ++j) {
-            for (ull i = 0; i < out.shape().i; ++i) {
+    Tripple tmp{out.shape()};
+
+    for (ull k = 0; k < tmp.k; ++k) {
+        for (ull j = 0; j < tmp.j; ++j) {
+            for (ull i = 0; i < tmp.i; ++i) {
                 out(i, j, k) = first + step * count;
                 ++count;
             }
@@ -345,9 +349,11 @@ Erray<T> enumerate(const ull i, const ull j, const ull k) {
     Erray<T> out{i, j, k};
     ull count = 0;
 
-    for (ull k = 0; k < out.shape().k; ++k) {
-        for (ull j = 0; j < out.shape().j; ++j) {
-            for (ull i = 0; i < out.shape().i; ++i) {
+    Tripple tmp{out.shape()};
+
+    for (ull k = 0; k < tmp.k; ++k) {
+        for (ull j = 0; j < tmp.j; ++j) {
+            for (ull i = 0; i < tmp.i; ++i) {
                 out(i, j, k) = start + step * count;
                 ++count;
             }
@@ -355,5 +361,8 @@ Erray<T> enumerate(const ull i, const ull j, const ull k) {
     }
     return out;
 }
+
+}  // namespace erray
+}  // namespace cj
 
 #endif  // ERRAY_FUNCT_HPP

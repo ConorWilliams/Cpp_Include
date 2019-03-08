@@ -11,6 +11,10 @@
  * Within this header bundle the main classes for Errays are defined as well as
  * all the class, overloads and functions for erray expressions.
  *
+ * erray expressions build an "expression tree", that enable lazy
+ * evaluation of expressions upon assignment to an Erray eliminating temporaries
+ * and repeated looping over Errays.
+ *
  * Erray is a contraction of expression-array.
  *
  * An Erray is considered an erray expression.
@@ -20,8 +24,8 @@
  *
  * Errays can be printed through an overload of std::cout.
  *
- * operations: +, -, *, /, pow(), %, abs(), log(), ln(), log2(), cross(), mm(),\
- *             sqrt(), transpose(), reshape()
+ * operations: +, -, *, /, pow(), %, , cross(), mm(), sqrt(), transpose(),
+ *             reshape()
  *
  * functions: sum(), min(), max(), avg(), swap(windows)
  *
@@ -44,7 +48,6 @@
  * TODO: add comments to base.hpp and switch to dcout()
  * TODO: swap shape checking to custom macro and add macro bound checking,
  *       remove unused includes
- * TODO: update COMMON_MACRO
  * TODO: implement missing stuff
  *
  * TODO: build fft header bundle
@@ -55,13 +58,12 @@
 
 #include <cassert>
 #include <cmath>
-#include <comforts.hpp>
 #include <complex>
+#include <erray/extras.hpp>
 #include <iostream>
 #include <utility>
 
 namespace cj {
-
 namespace erray {
 
 using std::cout;
@@ -157,8 +159,19 @@ Slice<T, E> slice(ErrExpr<E, T> const &expr, const ull i0, const ull i1,
 
 /*----------------------------------------------------------------------------*/
 
+template <typename Elhs, typename Erhs, typename T>
+class ErrayMM;
+
+template <typename Elhs, typename Erhs, typename T>
+ErrayMM<Elhs, Erhs, T> mm(ErrExpr<Elhs, T> const &u, ErrExpr<Erhs, T> const &v);
+
+/*----------------------------------------------------------------------------*/
+
 template <typename E, typename T, typename Funct>
 class ErrayElemWise;
+
+template <typename T, typename E>
+class Transpose;
 
 // ****************************************************************************
 // *                           Prototypes functions                           *
@@ -208,6 +221,9 @@ Erray<T> linspace(const ull first = 0, const ull last = 1, const ull N = 50);
 template <typename T = double, ull step = 1, ull start = 0>
 Erray<T> enumerate(const ull i, const ull j = 1, const ull k = 1);
 
+}  // namespace erray
+}  // namespace cj
+
 // ****************************************************************************
 // *                   Including Sub-Headers for core bundle                  *
 // ****************************************************************************
@@ -216,10 +232,16 @@ Erray<T> enumerate(const ull i, const ull j = 1, const ull k = 1);
 #include <erray/core/expr.hpp>
 #include <erray/core/funct.hpp>
 
-}  // namespace erray
+// ****************************************************************************
+// *                         Easy access type aliases                         *
+// ****************************************************************************
 
-}  // namespace cj
+#ifdef ERRAY_TYPEDEF_ON
 
+using cj::erray::Erray;
 typedef cj::erray::Erray<double> derray;
+typedef cj::erray::Erray<std::complex<double>> cplxrray;
+
+#endif  // ERRAY_TYPEDEF_ON
 
 #endif  // ERRAY_HPP
