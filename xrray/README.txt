@@ -64,7 +64,7 @@ Any function can be easily converted to an element wise function and
 automatically integrated into xrray expression using the ELEM_FUNCT_MACRO
 (FUNCTION, METHODNAME) macro detailed in xrray/core/base.hpp
 
-some still work in progress:
+Some still work in progress:
 
 Supported operations: (), [], +, -, *, /, %, =, +=, -=, *=, /=, %=
 
