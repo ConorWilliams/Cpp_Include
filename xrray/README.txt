@@ -52,8 +52,8 @@ Xrray operations/assignments are - where appropriate - compatible with
 Xrrays expressions are optimised to work with trivial/base types however the
 module handles arbitrary base types and can be used as a container for any type.
 
-All shape checking and bounds checking can be disabled through the "#define
-XRRAY_CHECK_ON"macro.
+All shape checking and bounds checking can be enabled through the "#define
+XRRAY_CHECK_ON" macro.
 
 All debug printing can be enabled through the "#define XRRAY_DEBUG_ON" macro.
 
@@ -64,15 +64,18 @@ Any function can be easily converted to an element wise function and
 automatically integrated into xrray expression using the ELEM_FUNCT_MACRO
 (FUNCTION, METHODNAME) macro detailed in xrray/core/base.hpp
 
+some still work in progress:
+
 Supported operations: (), [], +, -, *, /, %, =, +=, -=, *=, /=, %=
 
-Functions:  sum(), min(), max(), avg(), swap(windows), shuffle, pow()
+Functions:  sum(), min(), max(), avg(), swap(windows), shuffle(), pow(), amin(), 
+            amax(), var(), std()
 
 Initialise: empty(), zeros() ones(), linspace(), enumerate(), random(),
             random_int(), eye()
 
 Methods:    row(), col(), dep(), t12(), t23(), t13(), c12(), c23(), c13(),
             slice(), sum(), min(), max(), avg(), shape(), size(), pow(),  
-            reshape()
+            reshape(), amin(), amax(), var(), std()
 
 Most functions in <cmath> and <complex> are available as element wise method.
