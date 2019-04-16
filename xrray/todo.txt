@@ -1,0 +1,14 @@
+Things that need to be added to complete core
+
++=, -=, *=, /=, %=
+
+avg(), shuffle(), pow(), amin(), amax(), var(), std()
+
+random(), random_int()
+
+c12(), c23(), c13(),
+
+Planned future sub-modules:
+
+gradient descent curve fitter / optimiser
+Monte-Carlo curve fitter
