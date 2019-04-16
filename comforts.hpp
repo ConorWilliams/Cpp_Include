@@ -1,12 +1,15 @@
 /**
  * comforts.hpp
  *
+ * Copyright (c) 2019, C. J. Williams
+ * All rights reserved.
+ *
  * A collection of macros, small functions and small classes to make everything
  * a bit easier.
  */
 
-#ifndef SHUFFLE_HPP
-#define SHUFFLE_HPP
+#ifndef COMFORTS_HPP
+#define COMFORTS_HPP
 
 #include <cxxabi.h>  //de-mangle
 #include <time.h>
@@ -35,7 +38,7 @@ typedef unsigned long long int ull;
 
 /**
  * @brief      macro like assert with custom error message and better debug
- * message
+ *             message
  *
  * @param      CONDITIONAL  conditional statement to evaluate
  * @param      MESSAGE      The message to add to the output
@@ -78,29 +81,32 @@ void id(T const &in) {
 /*----------------------------------------------------------------------------*/
 
 /**
- * @brief      performs a Knuth shuffle on a input of length N indexable
- * with the [] operator
+ * @brief      performs a Knuth shuffle on a input of length N indexable with
+ *             the [] operator
  *
- * @param      cards               The cards to shuffle
- * @param[in]  N                   number of elements in cards
- * @param[in]  NUMBER_OF_SHUFFLES  The number of shuffles to do, default 1
+ * @param      cards  The cards to shuffle
+ * @param[in]  N      number of elements in cards
+ * @param[in]  rng    The rng to use
  *
- * @tparam     T                   type of cards
+ * @tparam     T      type of cards
  */
 template <class T>
-void knuth_shuffle(T &cards, uint_fast32_t N,
-                   uint_fast32_t NUMBER_OF_SHUFFLES = 1) {
-    gsl_rng *rng;
-    rng = gsl_rng_alloc(gsl_rng_taus2);
-    gsl_rng_set(rng, time(NULL));
+void knuth_shuffle(T &cards, uint_fast32_t N, gsl_rng *rng = nullptr) {
+    if (rng == nullptr) {
+        rng = gsl_rng_alloc(gsl_rng_taus2);
+        gsl_rng_set(rng, time(NULL));
 
-    for (unsigned j = 0; j < NUMBER_OF_SHUFFLES; ++j) {
+        for (unsigned i = 0; i < N - 1; ++i) {
+            std::swap(cards[i], cards[i + gsl_rng_uniform_int(rng, N - i)]);
+        }
+
+        gsl_rng_free(rng);
+
+    } else {
         for (unsigned i = 0; i < N - 1; ++i) {
             std::swap(cards[i], cards[i + gsl_rng_uniform_int(rng, N - i)]);
         }
     }
-
-    gsl_rng_free(rng);
 
     return;
 }
@@ -110,7 +116,7 @@ void knuth_shuffle(T &cards, uint_fast32_t N,
 // ****************************************************************************
 
 /**
- * @brief      Struct to hold 3 values
+ * @brief      Struct to hold 3 integer values
  */
 struct Tripple {
     ull i, j, k;
@@ -173,8 +179,9 @@ class Pair {
         i = tuple[0];
         j = tuple[1];
     }
+    Pair(const Pair<T> &in) : i{in.i}, j{in.j} {}
 };
 
 }  // namespace cj
 
-#endif  // SHUFFLE_HPP
+#endif  // COMFORTS_HPP
